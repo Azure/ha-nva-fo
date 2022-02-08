@@ -33,7 +33,7 @@
 #     AZURECLOUD = "AzureCloud" or "AzureUSGovernment"
 #
 #   - Set Firewall VM names and Resource Group in the Azure function app settings
-#     FW1NAME, FW2NAME, FWMONITOR, FW1FQDN, FW1PORT, FW2FQDN, FW2PORT, FWRGNAME, FWTRIES, FWDELAY, FWUDRTAG must be added
+#     FW1NAME, FW2NAME, FWMONITOR, FW1FQDN, FW1PORT, FW2FQDN, FW2PORT, FW1RGNAME, FW2RGNAME, FWTRIES, FWDELAY, FWUDRTAG must be added
 #     FWMONITOR = "VMStatus" or "TCPPort" - If using "TCPPort", then also set FW1FQDN, FW2FQDN, FW1PORT and FW2PORT values
 #
 #   - Set Timer Schedule where positions represent: Seconds - Minutes - Hours - Day - Month - DayofWeek
@@ -50,8 +50,8 @@ Write-Output -InputObject "HA NVA timer trigger function executed at:$(Get-Date)
 
 $VMFW1Name = $env:FW1NAME      # Set the Name of the primary NVA firewall
 $VMFW2Name = $env:FW2NAME      # Set the Name of the secondary NVA firewall
-$FW1RGName = $env:FWRGNAME     # Set the ResourceGroup that contains FW1
-$FW2RGName = $env:FWRGNAME     # Set the ResourceGroup that contains FW2
+$FW1RGName = $env:FW1RGNAME     # Set the ResourceGroup that contains FW1
+$FW2RGName = $env:FW2RGNAME     # Set the ResourceGroup that contains FW2
 $Monitor = $env:FWMONITOR      # "VMStatus" or "TCPPort" are valid values
 
 #--------------------------------------------------------------------------
