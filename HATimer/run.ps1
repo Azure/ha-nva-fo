@@ -241,7 +241,6 @@ Function Get-Subscriptions
 #--------------------------------------------------------------------------
 # Main code block for Azure function app                       
 #--------------------------------------------------------------------------
-Import-Module -Name Az.Accounts
 $Password = ConvertTo-SecureString $env:SP_PASSWORD -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USERNAME, $Password)
 #$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
