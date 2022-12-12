@@ -129,7 +129,7 @@ Function Start-Failover
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzureRmRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
       
       foreach ($RouteName in $Table.Routes)
       {
@@ -171,7 +171,7 @@ Function Start-Failback
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzureRmRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
 
       foreach ($RouteName in $Table.Routes)
       {
