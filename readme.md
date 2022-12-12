@@ -139,8 +139,6 @@ To create, configure, and deploy the function app:
 
 9.  Click the **Sync** button to retrieve and deploy the function code.
 
-> **NOTE:** After you deploy the code and complete the initial testing described in the next section, click the **Disconnect** button to disconnect the function app from the deployment repository so that future public repository updates are not automatically deployed.
-
 ### Test the function app
 
 After the Azure function app has been configured and deployed, use these steps to test automated failover between NVAs:
