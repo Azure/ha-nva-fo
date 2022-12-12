@@ -86,19 +86,19 @@ $IntSleep = $env:FWDELAY       # Delay in seconds between tries
 # Code blocks for supporting functions
 #--------------------------------------------------------------------------
 
-Function Send-AlertMessage ($Message)
-{
-    $MailServers = (Resolve-DnsName -Type MX -Name $env:FWMAILDOMAINMX).NameExchange
-    $MailFrom = $env:FWMAILFROM
-    $MailTo = $env:FWMAILTO
+#Function Send-AlertMessage ($Message)
+#{
+#    $MailServers = (Resolve-DnsName -Type MX -Name $env:FWMAILDOMAINMX).NameExchange
+#    $MailFrom = $env:FWMAILFROM
+#    $MailTo = $env:FWMAILTO
 
-    try { Send-MailMessage -SmtpServer $MailServers[1] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
-    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Mesage -Body $Message }
-}
+#    try { Send-MailMessage -SmtpServer $MailServers[1] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
+#    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Mesage -Body $Message }
+#}
 
 Function Test-VMStatus ($VM, $FWResourceGroup) 
 {
-  $VMDetail = Get-AzureRmVM -ResourceGroupName $FWResourceGroup -Name $VM -Status
+  $VMDetail = Get-AzVM -ResourceGroupName $FWResourceGroup -Name $VM -Status
   foreach ($VMStatus in $VMDetail.Statuses)
   { 
     $Status = $VMStatus.code
@@ -129,7 +129,7 @@ Function Start-Failover
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzureRmRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
       
       foreach ($RouteName in $Table.Routes)
       {
@@ -157,7 +157,7 @@ Function Start-Failover
     }
   }
 
-  Send-AlertMessage -message "NVA Alert: Failover to Secondary FW2"
+  #Send-AlertMessage -message "NVA Alert: Failover to Secondary FW2"
 
 }
 
@@ -171,7 +171,7 @@ Function Start-Failback
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzureRmRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
 
       foreach ($RouteName in $Table.Routes)
       {
@@ -199,15 +199,15 @@ Function Start-Failback
     }
   }
 
-  Send-AlertMessage -message "NVA Alert: Failback to Primary FW1"
+  #Send-AlertMessage -message "NVA Alert: Failback to Primary FW1"
 
 }
 
 Function Get-FWInterfaces
 {
-  $Nics = Get-AzureRmNetworkInterface | Where-Object -Property VirtualMachine -NE -Value $Null
-  $VMS1 = Get-AzureRmVM -Name $VMFW1Name -ResourceGroupName $FW1RGName
-  $VMS2 = Get-AzureRmVM -Name $VMFW2Name -ResourceGroupName $FW2RGName
+  $Nics = Get-AzNetworkInterface | Where-Object -Property VirtualMachine -NE -Value $Null
+  $VMS1 = Get-AzVM -Name $VMFW1Name -ResourceGroupName $FW1RGName
+  $VMS2 = Get-AzVM -Name $VMFW2Name -ResourceGroupName $FW2RGName
 
   foreach($Nic in $Nics)
   {
@@ -234,21 +234,25 @@ Function Get-FWInterfaces
 Function Get-Subscriptions
 {
   Write-Output -InputObject "Enumerating all subscriptins ..."
-  $Script:ListOfSubscriptionIDs = (Get-AzureRmSubscription).SubscriptionId
+  $Script:ListOfSubscriptionIDs = (Get-AzSubscription).SubscriptionId  
   Write-Output -InputObject $Script:ListOfSubscriptionIDs
 }
 
 #--------------------------------------------------------------------------
 # Main code block for Azure function app                       
 #--------------------------------------------------------------------------
-
 $Password = ConvertTo-SecureString $env:SP_PASSWORD -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USERNAME, $Password)
-$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
-Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
+#$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
 
-$Context = Get-AzureRmContext
-Set-AzureRmContext -Context $Context
+Connect-AzAccount -ServicePrincipal -TenantId $env:TENANTID -Credential $Credential
+#Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
+
+
+#$Context = Get-AzureRmContext
+#Set-AzureRmContext -Context $Context
+
+Set-AzContext -Subscription $env:SUBSCRIPTIONID
 
 $Script:PrimaryInts = @()
 $Script:SecondaryInts = @()
@@ -261,7 +265,7 @@ $CtrFW2 = 0
 $FW1Down = $True
 $FW2Down = $True
 
-$VMS = Get-AzureRmVM
+$VMS = Get-AzVM
 
 Get-Subscriptions
 Get-FWInterfaces
@@ -339,10 +343,9 @@ elseif (-not ($FW1Down) -and ($FW2Down))
 elseif (($FW1Down) -and ($FW2Down))
 {
   Write-Output -InputObject 'Both FW1 and FW2 Down - Manual recovery action required'
-  Send-AlertMessage -message "NVA Alert: Both FW1 and FW2 Down - Manual recovery action is required"
+  #Send-AlertMessage -message "NVA Alert: Both FW1 and FW2 Down - Manual recovery action is required"
 }
 else
 {
   Write-Output -InputObject 'Both FW1 and FW2 Up - No action is required'
 }
-
