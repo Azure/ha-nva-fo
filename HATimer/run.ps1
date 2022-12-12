@@ -98,7 +98,7 @@ Function Send-AlertMessage ($Message)
 
 Function Test-VMStatus ($VM, $FWResourceGroup) 
 {
-  $VMDetail = Get-AzureRmVM -ResourceGroupName $FWResourceGroup -Name $VM -Status
+  $VMDetail = Get-AzVM -ResourceGroupName $FWResourceGroup -Name $VM -Status
   foreach ($VMStatus in $VMDetail.Statuses)
   { 
     $Status = $VMStatus.code
@@ -205,9 +205,9 @@ Function Start-Failback
 
 Function Get-FWInterfaces
 {
-  $Nics = Get-AzureRmNetworkInterface | Where-Object -Property VirtualMachine -NE -Value $Null
-  $VMS1 = Get-AzureRmVM -Name $VMFW1Name -ResourceGroupName $FW1RGName
-  $VMS2 = Get-AzureRmVM -Name $VMFW2Name -ResourceGroupName $FW2RGName
+  $Nics = Get-AzNetworkInterface | Where-Object -Property VirtualMachine -NE -Value $Null
+  $VMS1 = Get-AzVM -Name $VMFW1Name -ResourceGroupName $FW1RGName
+  $VMS2 = Get-AzVM -Name $VMFW2Name -ResourceGroupName $FW2RGName
 
   foreach($Nic in $Nics)
   {
@@ -234,7 +234,7 @@ Function Get-FWInterfaces
 Function Get-Subscriptions
 {
   Write-Output -InputObject "Enumerating all subscriptins ..."
-  $Script:ListOfSubscriptionIDs = (Get-AzureRmSubscription).SubscriptionId
+  $Script:ListOfSubscriptionIDs = (Get-AzSubscription).SubscriptionId  
   Write-Output -InputObject $Script:ListOfSubscriptionIDs
 }
 
@@ -244,11 +244,16 @@ Function Get-Subscriptions
 
 $Password = ConvertTo-SecureString $env:SP_PASSWORD -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USERNAME, $Password)
-$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
-Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
+#$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
 
-$Context = Get-AzureRmContext
-Set-AzureRmContext -Context $Context
+Connect-AzAccount -ServicePrincipal -TenantId $TenantId -Credential $Credential
+#Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
+
+
+#$Context = Get-AzureRmContext
+#Set-AzureRmContext -Context $Context
+
+Set-AzContext -Subscription $env:SUBSCRIPTIONID
 
 $Script:PrimaryInts = @()
 $Script:SecondaryInts = @()
@@ -261,7 +266,7 @@ $CtrFW2 = 0
 $FW1Down = $True
 $FW2Down = $True
 
-$VMS = Get-AzureRmVM
+$VMS = Get-AzVM
 
 Get-Subscriptions
 Get-FWInterfaces
