@@ -246,7 +246,7 @@ $Password = ConvertTo-SecureString $env:SP_PASSWORD -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USERNAME, $Password)
 #$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
 
-Connect-AzAccount -ServicePrincipal -TenantId $TenantId -Credential $Credential
+Connect-AzAccount -ServicePrincipal -TenantId $env:TENANTID -Credential $Credential
 #Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
 
 
