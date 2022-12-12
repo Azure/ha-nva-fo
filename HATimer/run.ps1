@@ -345,4 +345,3 @@ else
 {
   Write-Output -InputObject 'Both FW1 and FW2 Up - No action is required'
 }
-
