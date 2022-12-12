@@ -1,3 +1,13 @@
+# Input bindings are passed in via param block.
+param($Timer)
+
+# Get the current universal time in the default string format.
+$currentUTCtime = (Get-Date).ToUniversalTime()
+
+# Write an information log with the current time.
+Write-Host "PowerShell timer trigger function ran! TIME: $currentUTCtime"
+Write-Host "Running main code"
+
 #-------------------------------------------------------------------------
 #
 # Copyright (c) Microsoft.  All rights reserved.
@@ -335,3 +345,4 @@ else
 {
   Write-Output -InputObject 'Both FW1 and FW2 Up - No action is required'
 }
+
