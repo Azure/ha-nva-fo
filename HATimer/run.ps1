@@ -121,8 +121,8 @@ Function Test-TCPPort ($Server, $Port)
 
 Function Start-Failover 
 {
-  foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs){
-    Set-AzureRmContext -SubscriptionId $SubscriptionID
+  foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs){    
+    Set-AzContext -Subscription $env:SUBSCRIPTIONID
     $RTable = @()
     $TagValue = $env:FWUDRTAG
     $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
@@ -165,7 +165,7 @@ Function Start-Failback
 {
   foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs)
   {
-    Set-AzureRmContext -SubscriptionId $SubscriptionID
+    Set-AzContext -Subscription $env:SUBSCRIPTIONID
     $TagValue = $env:FWUDRTAG
     $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
 
@@ -248,9 +248,6 @@ $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USER
 Connect-AzAccount -ServicePrincipal -TenantId $env:TENANTID -Credential $Credential
 #Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
 
-
-#$Context = Get-AzureRmContext
-#Set-AzureRmContext -Context $Context
 
 Set-AzContext -Subscription $env:SUBSCRIPTIONID
 
