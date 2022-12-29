@@ -124,8 +124,8 @@ Function Start-Failover
   foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs){    
     Set-AzContext -Subscription $env:SUBSCRIPTIONID
     $RTable = @()
-    $TagValue = $env:FWUDRTAG
-    $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
+    $TagValue = $env:FWUDRTAG  
+    $Res = Get-AzureResource -TagName nva_ha_udr -TagValue $TagValue
 
     foreach ($RTable in $Res)
     {
@@ -166,8 +166,8 @@ Function Start-Failback
   foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs)
   {
     Set-AzContext -Subscription $env:SUBSCRIPTIONID
-    $TagValue = $env:FWUDRTAG
-    $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
+    $TagValue = $env:FWUDRTAG    
+    $Res = Get-AzureResource -TagName nva_ha_udr -TagValue $TagValue
 
     foreach ($RTable in $Res)
     {
