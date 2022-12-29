@@ -63,6 +63,8 @@ $VMFW2Name = $env:FW2NAME      # Set the Name of the secondary NVA firewall
 $FW1RGName = $env:FWR1GNAME    # Set the ResourceGroup that contains FW1
 $FW2RGName = $env:FWR2GNAME    # Set the ResourceGroup that contains FW2
 $Monitor = $env:FWMONITOR      # "VMStatus" or "TCPPort" are valid values
+$HubName = $env:HUBNAME
+$RouteTableName = $env:ROUTETABLENAME
 
 #--------------------------------------------------------------------------
 # The parameters below are required if using "TCPPort" mode for monitoring
@@ -171,7 +173,8 @@ Function Start-Failback
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      $Table = Get-AzVirtualHubRouteTable -ResourceGroupName $RTable.ResourceGroupName -HubName $HubName -Name $RouteTableName 
+      #$Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
 
       foreach ($RouteName in $Table.Routes)
       {
