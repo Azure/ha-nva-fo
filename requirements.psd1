@@ -8,5 +8,5 @@
     'Az.Accounts' = '2.*'
     'Az.Compute' = '5.*'
     'Az.Network' = '5.*'
-    'Az.Resources' = '6.5*'
+    'Az.Resources' = '6.*'
 }
