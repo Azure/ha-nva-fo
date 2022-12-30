@@ -147,13 +147,13 @@ Function Start-Failover
           }
           elseif($RouteName.NextHopIpAddress -eq $PrimaryInts[$i])
           {
-            Set-AzureRmRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
+            Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
           }
         }
 
       }
   
-      $UpdateTable = [scriptblock]{param($Table) Set-AzureRmRouteTable -RouteTable $Table}
+      $UpdateTable = [scriptblock]{param($Table) Set-AzRouteTable -RouteTable $Table}
       &$UpdateTable $Table
 
     }
@@ -173,8 +173,9 @@ Function Start-Failback
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzVirtualHubRouteTable -ResourceGroupName $RTable.ResourceGroupName -HubName $HubName -Name $RouteTableName 
+      #$Table = Get-AzVirtualHubRouteTable -ResourceGroupName $RTable.ResourceGroupName -HubName $HubName -Name $RouteTableName 
       #$Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1"
 
       foreach ($RouteName in $Table.Routes)
       {
@@ -190,13 +191,13 @@ Function Start-Failback
           }
           elseif($RouteName.NextHopIpAddress -eq $SecondaryInts[$i])
           {
-            Set-AzureRmRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
+            Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
           }  
         }
 
       }  
 
-      $UpdateTable = [scriptblock]{param($Table) Set-AzureRmRouteTable -RouteTable $Table}
+      $UpdateTable = [scriptblock]{param($Table) Set-AzRouteTable -RouteTable $Table}
       &$UpdateTable $Table 
 
     }
@@ -349,3 +350,4 @@ else
 {
   Write-Output -InputObject 'Both FW1 and FW2 Up - No action is required'
 }
+
