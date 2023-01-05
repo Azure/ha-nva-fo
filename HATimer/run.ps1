@@ -130,8 +130,8 @@ Function Start-Failover
     $Res = Get-AzResource -TagName nva_ha_udr -TagValue $TagValue
 
     foreach ($RTable in $Res)
-    {
-      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+    {      
+      $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1"
       
       foreach ($RouteName in $Table.Routes)
       {
