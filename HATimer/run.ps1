@@ -131,7 +131,7 @@ Function Start-Failover
 
     foreach ($RTable in $Res)
     {      
-      $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1"
+      $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1" -VirtualHubName "UK_vWAN_Hub"
       
       foreach ($RouteName in $Table.Routes)
       {
@@ -174,7 +174,7 @@ Function Start-Failback
 
     foreach ($RTable in $Res)
     {            
-      $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1"
+      $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1" -VirtualHubName "UK_vWAN_Hub"
 
       foreach ($RouteName in $Table.Routes)
       {
