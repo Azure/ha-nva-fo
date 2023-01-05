@@ -147,7 +147,11 @@ Function Start-Failover
           }
           elseif($RouteName.NextHopIpAddress -eq $PrimaryInts[$i])
           {
-            Set-AzRouteConfig -Name $RouteName.Name -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
+            # Code created by Mehrin
+            #Set-AzRouteConfig -Name $RouteName.Name -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
+            $firewall2 = Get-AzVirtualHubVnetConnection -Name Meraki-vmx2 -ResourceGroupName UK_Network -ParentResourceName UK_vWAN_Hub
+            $route2 = New-AzVHubRoute -Name "SD-WAN-1" -Destination @("192.168.128.0/24", "10.5.5.0/24") -DestinationType "CIDR" -NextHop $firewall2.Id -NextHopType "ResourceId"
+            Update-AzVHubRouteTable -ResourceGroupName UK_Network -VirtualHubName UK_vWAN_Hub -Name UK-SD-WAN-1 -Route @($route2)
           }
         }
 
@@ -157,10 +161,7 @@ Function Start-Failover
       &$UpdateTable $Table
 
     }
-  }
-
-  #Send-AlertMessage -message "NVA Alert: Failover to Secondary FW2"
-
+  }  
 }
 
 Function Start-Failback 
@@ -172,9 +173,7 @@ Function Start-Failback
     $Res = Get-AzResource -TagName nva_ha_udr -TagValue $TagValue
 
     foreach ($RTable in $Res)
-    {
-      #$Table = Get-AzVirtualHubRouteTable -ResourceGroupName $RTable.ResourceGroupName -HubName $HubName -Name $RouteTableName 
-      #$Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+    {            
       $Table = Get-AzVHubRouteTable -ResourceGroupName "UK_Network" -Name "UK-SD-WAN-1"
 
       foreach ($RouteName in $Table.Routes)
@@ -191,7 +190,8 @@ Function Start-Failback
           }
           elseif($RouteName.NextHopIpAddress -eq $SecondaryInts[$i])
           {
-            Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
+            #Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
+            Write-Output -InputObject 'Start failback'
           }  
         }
 
