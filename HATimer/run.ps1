@@ -148,7 +148,7 @@ Function Start-Failover
           elseif($RouteName.NextHopIpAddress -eq $PrimaryInts[$i])
           {
             # Code created by Mehrin
-            #Set-AzRouteConfig -Name $RouteName.Name -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
+            Write-Output -InputObject 'Start failover'
             $firewall2 = Get-AzVirtualHubVnetConnection -Name Meraki-vmx2 -ResourceGroupName UK_Network -ParentResourceName UK_vWAN_Hub
             $route2 = New-AzVHubRoute -Name "SD-WAN-1" -Destination @("192.168.128.0/24", "10.5.5.0/24") -DestinationType "CIDR" -NextHop $firewall2.Id -NextHopType "ResourceId"
             Update-AzVHubRouteTable -ResourceGroupName UK_Network -VirtualHubName UK_vWAN_Hub -Name UK-SD-WAN-1 -Route @($route2)
@@ -190,8 +190,11 @@ Function Start-Failback
           }
           elseif($RouteName.NextHopIpAddress -eq $SecondaryInts[$i])
           {
-            #Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
             Write-Output -InputObject 'Start failback'
+            $firewall1 = Get-AzVirtualHubVnetConnection -Name Meraki-vmx1 -ResourceGroupName UK_Network -ParentResourceName UK_vWAN_Hub
+            $route1 = New-AzVHubRoute -Name "SD-WAN-1" -Destination @("192.168.128.0/24", "10.5.5.0/24") -DestinationType "CIDR" -NextHop $firewall1.Id -NextHopType "ResourceId"
+            Update-AzVHubRouteTable -ResourceGroupName UK_Network -VirtualHubName UK_vWAN_Hub -Name UK-SD-WAN-1 -Route @($route1)
+            
           }  
         }
 
