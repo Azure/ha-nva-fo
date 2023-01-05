@@ -156,9 +156,9 @@ Function Start-Failover
         }
 
       }
-  
-      $UpdateTable = [scriptblock]{param($Table) Set-AzRouteTable -RouteTable $Table}
-      &$UpdateTable $Table
+        
+      #$UpdateTable = [scriptblock]{param($Table) Set-AzRouteTable -RouteTable $Table}      
+      #&$UpdateTable $Table
 
     }
   }  
@@ -200,8 +200,8 @@ Function Start-Failback
 
       }  
 
-      $UpdateTable = [scriptblock]{param($Table) Set-AzRouteTable -RouteTable $Table}
-      &$UpdateTable $Table 
+      #$UpdateTable = [scriptblock]{param($Table) Set-AzRouteTable -RouteTable $Table}
+      #&$UpdateTable $Table 
 
     }
   }
