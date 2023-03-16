@@ -42,7 +42,10 @@
 #
 #--------------------------------------------------------------------------
 
-Write-Output -InputObject "HA NVA timer trigger function executed at:$(Get-Date)"
+# Input bindings are passed in via param block.
+param($Timer)
+
+Write-Output -InputObject "HA NVA timer trigger function executed at: $(Get-Date)"
 
 #--------------------------------------------------------------------------
 # Set firewall monitoring variables here
@@ -53,6 +56,7 @@ $VMFW2Name = $env:FW2NAME      # Set the Name of the secondary NVA firewall
 $FW1RGName = $env:FW1RGNAME     # Set the ResourceGroup that contains FW1
 $FW2RGName = $env:FW2RGNAME     # Set the ResourceGroup that contains FW2
 $Monitor = $env:FWMONITOR      # "VMStatus" or "TCPPort" are valid values
+$TagName = 'nva_ha_udr'
 
 #--------------------------------------------------------------------------
 # The parameters below are required if using "TCPPort" mode for monitoring
@@ -78,6 +82,7 @@ $IntSleep = $env:FWDELAY       # Delay in seconds between tries
 
 Function Send-AlertMessage ($Message)
 {
+    Write-Output "Sending Alert email to: $env:FWMAILTO"
     $MailServers = (Resolve-DnsName -Type MX -Name $env:FWMAILDOMAINMX).NameExchange
     $MailFrom = $env:FWMAILFROM
     $MailTo = $env:FWMAILTO
@@ -88,12 +93,12 @@ Function Send-AlertMessage ($Message)
 
 Function Test-VMStatus ($VM, $FWResourceGroup) 
 {
-  $VMDetail = Get-AzureRmVM -ResourceGroupName $FWResourceGroup -Name $VM -Status
+  $VMDetail = Get-AzVM -ResourceGroupName $FWResourceGroup -Name $VM -Status
   foreach ($VMStatus in $VMDetail.Statuses)
   { 
     $Status = $VMStatus.code
       
-    if($Status.CompareTo('PowerState/running') -eq 0)
+    if($Status -eq 'PowerState/running')
     {
       Return $False
     }
@@ -112,22 +117,22 @@ Function Test-TCPPort ($Server, $Port)
 Function Start-Failover 
 {
   foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs){
-    Set-AzureRmContext -SubscriptionId $SubscriptionID
+    $null = Set-AzContext -SubscriptionId $SubscriptionID
     $RTable = @()
     $TagValue = $env:FWUDRTAG
-    $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
+    $Res = Get-AzResource -TagName $TagName -TagValue $TagValue
+    Write-Output -InputObject "Found '$($Res.Count)' route table(s) tagged with the TagName '$TagName'."
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzureRmRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      Write-Output -InputObject "Analyzing Route Table: '$($RTable.Name)'"
+      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
       
-      foreach ($RouteName in $Table.Routes)
+      for ($j = 0; $j -lt $Table.Routes.Count; $j++)
       {
-        Write-Output -InputObject "Updating route table..."
-        Write-Output -InputObject $RTable.Name
-
+        $RouteName = $Table.Routes[$j]
         for ($i = 0; $i -lt $PrimaryInts.count; $i++)
-        {
+        {          
           if($RouteName.NextHopIpAddress -eq $SecondaryInts[$i])
           {
             Write-Output -InputObject 'Secondary NVA is already ACTIVE' 
@@ -135,39 +140,37 @@ Function Start-Failover
           }
           elseif($RouteName.NextHopIpAddress -eq $PrimaryInts[$i])
           {
-            Set-AzureRmRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
+            Write-Output -InputObject "Changing route '$($RouteName.Name)' to point to '$($SecondaryInts[$i])'"
+            $null = Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $SecondaryInts[$i] 
+            Send-AlertMessage -message "NVA Alert: Failover to Secondary FW2"
           }
         }
 
       }
-  
-      $UpdateTable = [scriptblock]{param($Table) Set-AzureRmRouteTable -RouteTable $Table}
-      &$UpdateTable $Table
+      
+      $null = Set-AzRouteTable -RouteTable $Table
 
     }
   }
-
-  Send-AlertMessage -message "NVA Alert: Failover to Secondary FW2"
-
 }
 
 Function Start-Failback 
 {
   foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs)
   {
-    Set-AzureRmContext -SubscriptionId $SubscriptionID
+    $null = Set-AzContext -Subscription $SubscriptionID
     $TagValue = $env:FWUDRTAG
-    $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
+    $Res = Get-AzResource -TagName $TagName -TagValue $TagValue
+    Write-Output -InputObject "Found '$($Res.Count)' route table(s) tagged with the TagName '$TagName'."
 
     foreach ($RTable in $Res)
     {
-      $Table = Get-AzureRmRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
+      Write-Output -InputObject "Analyzing Route Table: '$($RTable.Name)'"
+      $Table = Get-AzRouteTable -ResourceGroupName $RTable.ResourceGroupName -Name $RTable.Name
 
-      foreach ($RouteName in $Table.Routes)
+      for ($j = 0; $j -lt $Table.Routes.Count; $j++)
       {
-        Write-Output -InputObject "Updating route table..."
-        Write-Output -InputObject $RTable.Name
-
+        $RouteName = $Table.Routes[$j]
         for ($i = 0; $i -lt $PrimaryInts.count; $i++)
         {
           if($RouteName.NextHopIpAddress -eq $PrimaryInts[$i])
@@ -177,27 +180,25 @@ Function Start-Failback
           }
           elseif($RouteName.NextHopIpAddress -eq $SecondaryInts[$i])
           {
-            Set-AzureRmRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
+            Write-Output -InputObject "Changing route '$($RouteName.Name)' to point to '$($PrimaryInts[$i])'"
+            $null = Set-AzRouteConfig -Name $RouteName.Name  -NextHopType VirtualAppliance -RouteTable $Table -AddressPrefix $RouteName.AddressPrefix -NextHopIpAddress $PrimaryInts[$i]
+            Send-AlertMessage -message "NVA Alert: Failback to Primary FW1"
           }  
         }
 
       }  
-
-      $UpdateTable = [scriptblock]{param($Table) Set-AzureRmRouteTable -RouteTable $Table}
-      &$UpdateTable $Table 
+      
+      $null = Set-AzRouteTable -RouteTable $Table
 
     }
   }
-
-  Send-AlertMessage -message "NVA Alert: Failback to Primary FW1"
-
 }
 
 Function Get-FWInterfaces
 {
-  $Nics = Get-AzureRmNetworkInterface | Where-Object -Property VirtualMachine -NE -Value $Null
-  $VMS1 = Get-AzureRmVM -Name $VMFW1Name -ResourceGroupName $FW1RGName
-  $VMS2 = Get-AzureRmVM -Name $VMFW2Name -ResourceGroupName $FW2RGName
+  $Nics = Get-AzNetworkInterface | Where-Object -Property VirtualMachine -NE -Value $Null
+  $VMS1 = Get-AzVM -Name $VMFW1Name -ResourceGroupName $FW1RGName
+  $VMS2 = Get-AzVM -Name $VMFW2Name -ResourceGroupName $FW2RGName
 
   foreach($Nic in $Nics)
   {
@@ -209,10 +210,12 @@ Function Get-FWInterfaces
 
       if ($VM.Name -eq $VMFW1Name)
       {
+        Write-Output -InputObject "Private IP of Primary: $Prv"
         $Script:PrimaryInts += $Prv
       }
-      elseif($VM.Name -eq $vmFW2Name)
+      elseif($VM.Name -eq $VMFW2Name)
       {
+        Write-Output -InputObject "Private IP of Secondary: $Prv"
         $Script:SecondaryInts += $Prv
       }
 
@@ -223,8 +226,8 @@ Function Get-FWInterfaces
 
 Function Get-Subscriptions
 {
-  Write-Output -InputObject "Enumerating all subscriptins ..."
-  $Script:ListOfSubscriptionIDs = (Get-AzureRmSubscription).SubscriptionId
+  Write-Output -InputObject "Enumerating all subscriptions ..."
+  $Script:ListOfSubscriptionIDs = (Get-AzSubscription).SubscriptionId
   Write-Output -InputObject $Script:ListOfSubscriptionIDs
 }
 
@@ -234,11 +237,11 @@ Function Get-Subscriptions
 
 $Password = ConvertTo-SecureString $env:SP_PASSWORD -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USERNAME, $Password)
-$AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
-Add-AzureRmAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -SubscriptionId $env:SUBSCRIPTIONID -Environment $AzureEnv
+$AzureEnv = Get-AzEnvironment -Name $env:AZURECLOUD
+$null = Add-AzAccount -ServicePrincipal -Tenant $env:TENANTID -Credential $Credential -Subscription $env:SUBSCRIPTIONID -Environment $AzureEnv
 
-$Context = Get-AzureRmContext
-Set-AzureRmContext -Context $Context
+$Context = Get-AzContext
+$null = Set-AzContext -Context $Context
 
 $Script:PrimaryInts = @()
 $Script:SecondaryInts = @()
@@ -251,7 +254,7 @@ $CtrFW2 = 0
 $FW1Down = $True
 $FW2Down = $True
 
-$VMS = Get-AzureRmVM
+$VMS = Get-AzVM
 
 Get-Subscriptions
 Get-FWInterfaces
@@ -312,6 +315,10 @@ if (($FW1Down) -and -not ($FW2Down))
   {
     Write-Output -InputObject 'FW1 Down - Failing over to FW2'
     Start-Failover 
+  }
+  else 
+  {
+    Write-Output -InputObject 'FW1 Down - Failing over disabled'
   }
 }
 elseif (-not ($FW1Down) -and ($FW2Down))
