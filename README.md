@@ -1,5 +1,5 @@
 # Automated failover for network virtual appliances: 
-## Supporting high availability with user-defined route tables on Microsoft Azure
+## Supporting high availability with user-defined route tables on Microsoft Azure (Apply patch for Meraki vMX)
 
 This guide shows you how to implement high availability for network virtual appliance (NVA) firewalls using custom route tables that direct traffic through
 an active-passive NVA configuration. These user-defined routes (UDRs) override the Azure default system routes by directing traffic to the active NVA firewall in an active-passive pair. If the active NVA firewall fails for some reason, whether through a planned or unplanned outage, the route can failover to the secondary NVA firewall.
@@ -51,7 +51,10 @@ To set up the Azure resources:
 
 2.  Take note of the service principal application ID, key value, and Azure Active Directory tenant ID. You will need these to set up Azure Functions later.
 
-3.  [Assign RBAC permissions to the service principal](https://docs.microsoft.com/azure/active-directory/role-based-access-control-configure) for each Azure resource group. For the resource group containing the NVA firewall virtual machines, assign the **Reader** role. For the resource group(s) containing route table resources, assign the **Contributor** role.
+3.  [Assign RBAC permissions to the service principal](https://docs.microsoft.com/azure/active-directory/role-based-access-control-configure) for Azure **subscription** and **resource group**.  
+    1. For the **subscription** containing the NVA firewall virtual machines, assign the **Reader** role.
+       Meraki vMX's resource group has limited privileges to change the settings, so we will configure the settings for the higher level subscription.
+    2. For the **resource group(s)** containing route table resources, assign the **Contributor** role.
 
 4.  [Configure the resource tag name and value](https://docs.microsoft.com/azure/azure-resource-manager/resource-group-using-tags#portal) for each route table resource managed by the function app using the following:
 
@@ -94,23 +97,25 @@ To create, configure, and deploy the function app:
 
 4.  Click [Application settings](https://docs.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings#settings) and add the following variables and values:
 
-| Variable       | Value                                                                                   |
-|----------------|-----------------------------------------------------------------------------------------|
-| SP\_USERNAME   | Application ID of the service principal                                                 |
-| SP\_PASSWORD   | Key value of the service principal                                                      |
-| TENANTID       | Azure Active Directory tenant ID                                                        |
-| SUBSCRIPTIONID | Azure subscription ID                                                                   |
-| AZURECLOUD     | Either *AzureCloud* or *AzureUSGovernment*                                              |
-| FW1NAME        | Name of the virtual machine hosting the first NVA firewall instance                     |
-| FW2NAME        | Name of the virtual machine hosting the second NVA firewall instance                    |
-| FWRGNAME       | Name of the resource group containing the NVA firewall virtual machines                 |
-| FWUDRTAG       | Resource tag value                                                                      |
-| FWTRIES        | *3* (enables three retries for checking firewall health before returning “Down” status) |
-| FWDELAY        | *2* (enables two seconds between retries)                                               |
-| FWMONITOR      | Either *VMStatus* or *TCPPort*                                                          |
-| FWMAILDOMAINMX | DNS domain name containing MX record for sending email alerts                           |
-| FWMAILFROM     | Email address to use as “From:” address on email alerts                                 |
-| FWMAILTO       | Email address to which email alerts should be sent                                      |
+| Variable                    | Value                                                                                   |
+|-----------------------------|-----------------------------------------------------------------------------------------|
+| FUNCTIONS_EXTENSION_VERSION | ~1 (Deal with [issue](https://github.com/Azure/ha-nva-fo/issues/7))                     |
+| SP\_USERNAME                | Application ID of the service principal                                                 |
+| SP\_PASSWORD                | Key value of the service principal                                                      |
+| TENANTID                    | Azure Active Directory tenant ID                                                        |
+| SUBSCRIPTIONID              | Azure subscription ID                                                                   |
+| AZURECLOUD                  | Either *AzureCloud* or *AzureUSGovernment*                                              |
+| FW1NAME                     | Name of the virtual machine hosting the first NVA firewall instance                     |
+| FW2NAME                     | Name of the virtual machine hosting the second NVA firewall instance                    |
+| FW1RGNAME                   | Name of the resource group containing the first NVA firewall virtual machines           |
+| FW2RGNAME                   | Name of the resource group containing the second NVA firewall virtual machines          |
+| FWUDRTAG                    | Resource tag value                                                                      |
+| FWTRIES                     | *3* (enables three retries for checking firewall health before returning “Down” status) |
+| FWDELAY                     | *2* (enables two seconds between retries)                                               |
+| FWMONITOR                   | Either *VMStatus* or *TCPPort*                                                          |
+| FWMAILDOMAINMX              | DNS domain name containing MX record for sending email alerts                           |
+| FWMAILFROM                  | Email address to use as “From:” address on email alerts                                 |
+| FWMAILTO                    | Email address to which email alerts should be sent                                      |
 
 5.  If you set FWMONITOR to *TCPPort*, add the following application setting variables and values:
 
@@ -128,9 +133,11 @@ To create, configure, and deploy the function app:
 
     1.  **Choose Source**: External Repository
 
-    2.  **Repository URL**: <https://github.com/[repo-name]/ha-nva-fo>
+    2.  **Repository URL**: <https://github.com/[repo-name]/ha-nva-fo>  
+        Please change it in the appropriate Repository URL.
 
-    3.  **Branch**: *master*
+    3.  **Branch**: *patch-meraki-vmx*  
+        Please change it in the appropriate Branch.
 
     4.  **Repository Type**: Git
 
@@ -183,3 +190,7 @@ This solution is basic by design so you can tailor it to your environment. How y
 * [Azure Functions documentation](https://docs.microsoft.com/azure/azure-functions/)
 
 * [Azure Virtual Network Appliances](https://azure.microsoft.com/solutions/network-appliances/)
+
+* [vMX Setup Guide for Microsoft Azure](https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Microsoft_Azure)
+
+* [Deploying Highly Available vMX in Azure](https://documentation.meraki.com/MX/Other_Topics/Deploying_Highly_Available_vMX_in_Azure)
