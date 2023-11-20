@@ -50,8 +50,8 @@ Write-Output -InputObject "HA NVA timer trigger function executed at:$(Get-Date)
 
 $VMFW1Name = $env:FW1NAME      # Set the Name of the primary NVA firewall
 $VMFW2Name = $env:FW2NAME      # Set the Name of the secondary NVA firewall
-$FW1RGName = $env:FWRGNAME     # Set the ResourceGroup that contains FW1
-$FW2RGName = $env:FWRGNAME     # Set the ResourceGroup that contains FW2
+$FW1RGName = $env:FW1RGNAME     # Set the ResourceGroup that contains FW1
+$FW2RGName = $env:FW2RGNAME     # Set the ResourceGroup that contains FW2
 $Monitor = $env:FWMONITOR      # "VMStatus" or "TCPPort" are valid values
 
 #--------------------------------------------------------------------------
